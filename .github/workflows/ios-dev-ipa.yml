@@ -69,6 +69,8 @@ jobs:
           p12-file-base64: ${{ secrets.P12_DIST_BASE64 }}
           p12-password: ${{ secrets.P12_DIST_PASSWORD }}
           keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+          keychain: signing_temp
+          create-keychain: true
 
       - name: Import development cert
         uses: apple-actions/import-codesign-certs@v5
@@ -76,6 +78,8 @@ jobs:
           p12-file-base64: ${{ secrets.P12_DEV_BASE64 }}
           p12-password: ${{ secrets.P12_DEV_PASSWORD }}
           keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+          keychain: signing_temp
+          create-keychain: false
 
       - name: Write ASC API key (.p8)
         shell: bash
