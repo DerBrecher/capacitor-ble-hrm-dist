@@ -56,11 +56,25 @@ jobs:
           /usr/bin/openssl pkcs12 -in cert.p12 -nokeys -passin pass:"$P12_PASSWORD" -info -noout
 
       # Import your Apple Development certificate into the build keychain
-      - name: Import signing cert
+      # - name: Import signing cert
+      #   uses: apple-actions/import-codesign-certs@v5
+      #   with:
+      #     p12-file-base64: ${{ secrets.P12_BASE64 }}
+      #     p12-password: ${{ secrets.P12_PASSWORD }}
+      #     keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Import distribution cert
         uses: apple-actions/import-codesign-certs@v5
         with:
-          p12-file-base64: ${{ secrets.P12_BASE64 }}
-          p12-password: ${{ secrets.P12_PASSWORD }}
+          p12-file-base64: ${{ secrets.P12_DIST_BASE64 }}
+          p12-password: ${{ secrets.P12_DIST_PASSWORD }}
+          keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Import development cert
+        uses: apple-actions/import-codesign-certs@v5
+        with:
+          p12-file-base64: ${{ secrets.P12_DEV_BASE64 }}
+          p12-password: ${{ secrets.P12_DEV_PASSWORD }}
           keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
 
       - name: Write ASC API key (.p8)
