@@ -1,4 +1,4 @@
-name: iOS (Capacitor) – Build Dev IPA
+name: iOS (Capacitor) – Build App Store IPA
 on:
   workflow_dispatch:
   push:
@@ -97,7 +97,7 @@ jobs:
             -authenticationKeyIssuerID "${{ secrets.APPSTORE_ISSUER_ID }}" \
             clean archive | tee xcodebuild.log
 
-      # Create ExportOptions with modern method + UUID mapping
+      # Create ExportOptions for App Store
       - name: Create ExportOptions.plist
         working-directory: ios/App
         run: |
@@ -105,9 +105,11 @@ jobs:
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0"><dict>
-            <key>method</key><string>development</string>
+            <key>method</key><string>app-store</string>
             <key>signingStyle</key><string>automatic</string>
             <key>manageAppVersionAndBuildNumber</key><false/>
+            <key>compileBitcode</key><false/>
+            <key>destination</key><string>export</string>
           </dict></plist>
           PLIST
           echo "== ExportOptions.plist =="; plutil -p ExportOptions.plist
@@ -139,7 +141,6 @@ jobs:
             echo "No embedded.mobileprovision in archive ❌"
           fi
 
-
       - name: Export IPA
         working-directory: ios/App
         run: |
@@ -152,13 +153,13 @@ jobs:
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ios-dev-ipa
+          name: ios-app-store-ipa
           path: ios/App/build/export/*.ipa
 
-      # - name: Upload app to TestFlight
-      #   uses: apple-actions/upload-testflight-build@v3
-      #   with:
-      #     app-path: ios/App/build/export/App.ipa
-      #     issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
-      #     api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
-      #     api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+      - name: Upload app to TestFlight
+        uses: apple-actions/upload-testflight-build@v3
+        with:
+          app-path: ios/App/build/export/App.ipa
+          issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
+          api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
+          api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
