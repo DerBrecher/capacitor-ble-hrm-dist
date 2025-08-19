@@ -86,7 +86,10 @@ jobs:
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGNING_REQUIRED=YES \
             CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER= \
             DEVELOPMENT_TEAM="${APPLE_TEAM_ID}" \
             PRODUCT_BUNDLE_IDENTIFIER="${BUNDLE_ID}" \
             CURRENT_PROJECT_VERSION="${BUILD_NUM}" \
@@ -105,12 +108,11 @@ jobs:
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0"><dict>
-            <key>method</key><string>app-store-connect</string> <!-- was: app-store (deprecated) -->
+            <key>method</key><string>app-store-connect</string>
             <key>signingStyle</key><string>automatic</string>
             <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
             <key>manageAppVersionAndBuildNumber</key><false/>
             <key>destination</key><string>export</string>
-            <!-- Bitcode is gone on modern Xcode; don't set compileBitcode -->
           </dict></plist>
           PLIST
           echo "== ExportOptions.plist =="; plutil -p ExportOptions.plist
