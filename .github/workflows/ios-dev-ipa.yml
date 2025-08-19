@@ -101,15 +101,16 @@ jobs:
       - name: Create ExportOptions.plist
         working-directory: ios/App
         run: |
-          cat > ExportOptions.plist <<PLIST
+          cat > ExportOptions.plist <<'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0"><dict>
-            <key>method</key><string>app-store</string>
+            <key>method</key><string>app-store-connect</string> <!-- was: app-store (deprecated) -->
             <key>signingStyle</key><string>automatic</string>
+            <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
             <key>manageAppVersionAndBuildNumber</key><false/>
-            <key>compileBitcode</key><false/>
             <key>destination</key><string>export</string>
+            <!-- Bitcode is gone on modern Xcode; don't set compileBitcode -->
           </dict></plist>
           PLIST
           echo "== ExportOptions.plist =="; plutil -p ExportOptions.plist
@@ -143,11 +144,19 @@ jobs:
 
       - name: Export IPA
         working-directory: ios/App
+        env:
+          AUTH_KEY_PATH: ${{ env.AUTH_KEY_PATH }}  # already set earlier
         run: |
+          set -euo pipefail
           xcodebuild -exportArchive \
             -archivePath "$PWD/build/$SCHEME.xcarchive" \
             -exportPath "$PWD/build/export" \
-            -exportOptionsPlist ExportOptions.plist | xcpretty && exit ${PIPESTATUS[0]}
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$AUTH_KEY_PATH" \
+            -authenticationKeyID "${{ secrets.APPSTORE_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.APPSTORE_ISSUER_ID }}" \
+            | xcpretty
           ls -la "$PWD/build/export"
 
       - name: Upload IPA artifact
