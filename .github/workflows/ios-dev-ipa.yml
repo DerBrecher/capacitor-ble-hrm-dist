@@ -46,11 +46,20 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Sanity check P12 + password
+      - name: Sanity check P12 + password (dist)
         shell: bash
         env:
-          P12_BASE64: ${{ secrets.P12_BASE64 }}
-          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          P12_BASE64: ${{ secrets.P12_DIST_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_DIST_PASSWORD }}
+        run: |
+          echo "$P12_BASE64" | base64 -D > cert.p12   # macOS runner uses -D to decode
+          /usr/bin/openssl pkcs12 -in cert.p12 -nokeys -passin pass:"$P12_PASSWORD" -info -noout
+
+      - name: Sanity check P12 + password (dev)
+        shell: bash
+        env:
+          P12_BASE64: ${{ secrets.P12_DEV_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_DEV_PASSWORD }}
         run: |
           echo "$P12_BASE64" | base64 -D > cert.p12   # macOS runner uses -D to decode
           /usr/bin/openssl pkcs12 -in cert.p12 -nokeys -passin pass:"$P12_PASSWORD" -info -noout
