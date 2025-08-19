@@ -34,13 +34,20 @@ jobs:
         run: |
           npx cap sync ios
 
+      - name: Declare no non-exempt encryption (Info.plist)
+        run: |
+          set -euo pipefail
+          PLIST="ios/App/App/Info.plist"   # adjust if different
+          /usr/libexec/PlistBuddy -c "Delete :ITSAppUsesNonExemptEncryption" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST"
+          echo "Info.plist updated:"; /usr/libexec/PlistBuddy -c "Print :ITSAppUsesNonExemptEncryption" "$PLIST"
+
+
       - name: CocoaPods install (ensure post_install applied)
         working-directory: ios/App
         run: |
           pod install --repo-update
 
-
-      # Pin the Xcode version on the runner
       - name: Select Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -63,14 +70,6 @@ jobs:
         run: |
           echo "$P12_BASE64" | base64 -D > cert.p12   # macOS runner uses -D to decode
           /usr/bin/openssl pkcs12 -in cert.p12 -nokeys -passin pass:"$P12_PASSWORD" -info -noout
-
-      # Import your Apple Development certificate into the build keychain
-      # - name: Import signing cert
-      #   uses: apple-actions/import-codesign-certs@v5
-      #   with:
-      #     p12-file-base64: ${{ secrets.P12_BASE64 }}
-      #     p12-password: ${{ secrets.P12_PASSWORD }}
-      #     keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
 
       - name: Import distribution cert
         uses: apple-actions/import-codesign-certs@v5
@@ -112,8 +111,6 @@ jobs:
             -workspace App.xcworkspace -scheme App -configuration Release \
             | egrep 'CODE_SIGN|PROVISIONING|DEVELOPMENT_TEAM|PRODUCT_BUNDLE_IDENTIFIER' || true
 
-
-      # Archive: SIGN during archive with the UUID (this embeds the profile)
       - name: Build archive (xcarchive)
         working-directory: ios/App
         run: |
@@ -155,31 +152,31 @@ jobs:
           echo "== ExportOptions.plist =="; plutil -p ExportOptions.plist
 
       # Sanity checks (VERY helpful)
-      - name: Show installed profiles + check embedded one in archive
-        run: |
-          PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-          echo "Installed profiles:"; ls -la "$PROFILE_DIR" || true
-          for f in "$PROFILE_DIR"/*.mobileprovision; do
-            [ -e "$f" ] || continue
-            security cms -D -i "$f" >/tmp/p.plist
-            NAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' /tmp/p.plist)
-            UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /tmp/p.plist)
-            APPID=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' /tmp/p.plist)
-            echo "• $NAME | UUID=$UUID | APPID=$APPID"
-          done
-          INFO=ios/App/build/App.xcarchive/Info.plist
-          TEAM=$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:Team' "$INFO")
-          echo "Archive Team: $TEAM"
-          APP_REL=$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:ApplicationPath' "$INFO")
-          APP="ios/App/build/App.xcarchive/Products/Applications/${APP_REL##*/}"
-          if [ -f "$APP/embedded.mobileprovision" ]; then
-            echo "Archive contains embedded.mobileprovision ✅"
-            security cms -D -i "$APP/embedded.mobileprovision" >/tmp/emb.plist
-            echo "Embedded UUID:" $(/usr/libexec/PlistBuddy -c 'Print :UUID' /tmp/emb.plist)
-            echo "Embedded APPID:" $(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' /tmp/emb.plist)
-          else
-            echo "No embedded.mobileprovision in archive ❌"
-          fi
+      # - name: Show installed profiles + check embedded one in archive
+      #   run: |
+      #     PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+      #     echo "Installed profiles:"; ls -la "$PROFILE_DIR" || true
+      #     for f in "$PROFILE_DIR"/*.mobileprovision; do
+      #       [ -e "$f" ] || continue
+      #       security cms -D -i "$f" >/tmp/p.plist
+      #       NAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' /tmp/p.plist)
+      #       UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /tmp/p.plist)
+      #       APPID=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' /tmp/p.plist)
+      #       echo "• $NAME | UUID=$UUID | APPID=$APPID"
+      #     done
+      #     INFO=ios/App/build/App.xcarchive/Info.plist
+      #     TEAM=$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:Team' "$INFO")
+      #     echo "Archive Team: $TEAM"
+      #     APP_REL=$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:ApplicationPath' "$INFO")
+      #     APP="ios/App/build/App.xcarchive/Products/Applications/${APP_REL##*/}"
+      #     if [ -f "$APP/embedded.mobileprovision" ]; then
+      #       echo "Archive contains embedded.mobileprovision ✅"
+      #       security cms -D -i "$APP/embedded.mobileprovision" >/tmp/emb.plist
+      #       echo "Embedded UUID:" $(/usr/libexec/PlistBuddy -c 'Print :UUID' /tmp/emb.plist)
+      #       echo "Embedded APPID:" $(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' /tmp/emb.plist)
+      #     else
+      #       echo "No embedded.mobileprovision in archive ❌"
+      #     fi
 
       - name: Export IPA
         working-directory: ios/App
