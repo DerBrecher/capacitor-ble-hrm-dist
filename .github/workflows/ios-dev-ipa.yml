@@ -72,6 +72,14 @@ jobs:
               chmod 600 "$KEY_PATH"
               echo "AUTH_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
 
+      - name: Show effective signing settings (Release)
+        working-directory: ios/App
+        run: |
+          xcodebuild -showBuildSettings \
+            -workspace App.xcworkspace -scheme App -configuration Release \
+            | egrep 'CODE_SIGN|PROVISIONING|DEVELOPMENT_TEAM|PRODUCT_BUNDLE_IDENTIFIER' || true
+
+
       # Archive: SIGN during archive with the UUID (this embeds the profile)
       - name: Build archive (xcarchive)
         working-directory: ios/App
