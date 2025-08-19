@@ -1,4 +1,4 @@
-package com.example.blehrmdist;
+package com.manganradium.blehrmdist;
 
 import com.getcapacitor.BridgeActivity;
 
