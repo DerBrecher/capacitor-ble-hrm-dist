@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.example.blehrm',
+  appId: 'com.example.blehrmdist',
   appName: 'BLE HRM',
   webDir: 'dist',
 };
